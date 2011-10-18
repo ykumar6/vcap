@@ -199,7 +199,6 @@ class AppsController < ApplicationController
       raise CloudError.new(CloudError::APP_FILE_ERROR, params[:path] || '/') unless url
    
       http = http_apost(url, auth, file)
-      puts http.response
       self.response_body = http.response
     ensure
       FileUtils.rm_f(file.path)
