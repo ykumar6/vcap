@@ -193,8 +193,6 @@ class AppsController < ApplicationController
     # will Fiber.yield
     begin
       file = get_uploaded_file
-      puts file
-      puts "continuing"
       url, auth = AppManager.new(@app).get_file_url(params[:instance_id], params[:path])
       raise CloudError.new(CloudError::APP_FILE_ERROR, params[:path] || '/') unless url
    
