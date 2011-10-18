@@ -62,7 +62,7 @@ module DEA
       F.open(@path, 'w') do |fs|
         fs.write @env['rack.input'].read
       end
-      return [200]
+     return [ 200, {'Content-Type'=>'text/plain'}, ["OK"] ]
     rescue
       write_error
     end
