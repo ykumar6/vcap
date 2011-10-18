@@ -189,6 +189,23 @@ class AppsController < ApplicationController
     end
   end
 
+  def filepatch
+    # will Fiber.yield
+    begin
+      file = get_uploaded_file
+      puts file
+      puts "continuing"
+      url, auth = AppManager.new(@app).get_file_url(params[:instance_id], params[:path])
+      raise CloudError.new(CloudError::APP_FILE_ERROR, params[:path] || '/') unless url
+   
+      http = http_apost(url, auth, file)
+      puts http.response
+      self.response_body = http.response
+    ensure
+      FileUtils.rm_f(file.path)
+    end
+  end
+
   private
 
   def find_app_by_name
