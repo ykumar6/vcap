@@ -39,6 +39,14 @@ class ApplicationController < ActionController::Base
     return Fiber.yield
   end
 
+  def http_apost(url, auth, file)
+    f = Fiber.current
+    http = EM::HttpRequest.new(url).post(:file => file.path, :head => { "authorization" => auth })
+    http.errback  { f.resume(http) }
+    http.callback { f.resume(http) }
+    return Fiber.yield
+  end
+
   def user
     @proxy_user || @current_user
   end
