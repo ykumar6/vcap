@@ -35,23 +35,38 @@ module DEA
 
     F = ::File
 
+
     def _call(env)
       @env = env
       @script_name = env['SCRIPT_NAME']
       @path_info = Rack::Utils.unescape(env['PATH_INFO'])
       @path = F.expand_path(F.join(@root, @path_info))
+     
+      if env['REQUEST_METHOD'].eql? "POST"
+        update_file
+      else 
+        if not File.exists? @path
+          return entity_not_found
+        end
 
-      if not File.exists? @path
-        return entity_not_found
-      end
-
-      resolve_symlink
-      if forbidden = check_forbidden
-        forbidden
-      else
-        list_path
+        resolve_symlink
+      	if forbidden = check_forbidden
+        	forbidden
+      	else
+        	list_path
+      	end
       end
     end
+    
+    def update_file
+      F.open(@path, 'w') do |fs|
+        fs.write @env['rack.input'].read
+      end
+      return [200]
+    rescue
+      write_error
+    end
+
 
     def resolve_symlink
       real_path = Pathname.new(@path).realpath.to_s
@@ -134,6 +149,14 @@ module DEA
       body = "Entity not found.\n"
       size = Rack::Utils.bytesize(body)
       return [404, {"Content-Type" => "text/plain",
+                "Content-Length" => size.to_s,
+                "X-Cascade" => "pass"}, [body]]
+    end
+
+    def write_error
+      body = "Write error"
+      size = Rack::Utils.bytesize(body)
+      return [403, {"Content-Type" => "text/plain",
                 "Content-Length" => size.to_s,
                 "X-Cascade" => "pass"}, [body]]
     end
