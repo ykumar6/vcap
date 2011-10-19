@@ -35,21 +35,39 @@ module DEA
 
     F = ::File
 
-
     def _call(env)
       @env = env
       @script_name = env['SCRIPT_NAME']
       @path_info = Rack::Utils.unescape(env['PATH_INFO'])
       @path = F.expand_path(F.join(@root, @path_info))
-     
+      
       if env['REQUEST_METHOD'].eql? "POST"
         update_file
+      elsif env['REQUEST_METHOD'].eql? "PUT"
+        puts @env
+        puts @env['HTTP_FS_ACTION']
+        if @env['HTTP_FS_ACTION'].eql? "copy"
+          puts "copy"
+          copy_fs          
+        end
+        if @env['HTTP_FS_ACTION'].eql? "move"
+          puts "move"
+          move_fs          
+        end
+        if @env['HTTP_FS_ACTION'].eql? "remove"
+          puts "remove"
+          remove_fs          
+        end
+        if @env['HTTP_FS_ACTION'].eql? "createdir"
+          puts "createdir"
+          create_dir          
+        end
       else 
         if not File.exists? @path
           return entity_not_found
         end
 
-        resolve_symlink
+      	resolve_symlink
       	if forbidden = check_forbidden
         	forbidden
       	else
@@ -58,15 +76,72 @@ module DEA
       end
     end
     
+    def copy_fs
+      dest = F.join(@path, @env['HTTP_FS_DEST'])
+      puts dest
+      
+      if @env['HTTP_FS_CLEAN'].eql? "true"
+        FileUtils.rm_rf(dest)
+      end
+      
+      src = F.join(@path, @env['HTTP_FS_SRC'])
+      puts src
+      
+      FileUtils.cp_r(src, dest)
+      return [ 200, {'Content-Type'=>'text/plain'}, ["OK"] ] 
+    rescue
+      puts "error"
+      write_error
+    end
+    
+    def create_dir
+      src = F.join(@path, @env['HTTP_FS_SRC'])
+      puts src
+      
+      FileUtils.mkdir(src)
+      return [ 200, {'Content-Type'=>'text/plain'}, ["OK"] ] 
+    rescue
+      puts "error"
+      write_error
+    end
+    
+    def move_fs
+      dest = F.join(@path, @env['HTTP_FS_DEST'])
+      puts dest
+      
+      if @env['HTTP_FS_CLEAN'].eql? "true"
+        FileUtils.rm_rf(dest)
+      end
+      
+      src = F.join(@path, @env['HTTP_FS_SRC'])
+      puts src
+      
+      FileUtils.mv(src, dest)
+      return [ 200, {'Content-Type'=>'text/plain'}, ["OK"] ] 
+    rescue
+      puts "error"
+      write_error
+    end
+    
+    def remove_fs
+      src = F.join(@path, @env['HTTP_FS_SRC'])
+      puts src
+      
+      FileUtils.rm_rf(src)
+      return [ 200, {'Content-Type'=>'text/plain'}, ["OK"] ] 
+    rescue
+      puts "error"
+      write_error
+    end
+    
     def update_file
       F.open(@path, 'w') do |fs|
         fs.write @env['rack.input'].read
       end
-     return [ 200, {'Content-Type'=>'text/plain'}, ["OK"] ]
+      return [ 200, {'Content-Type'=>'text/plain'}, ["OK"] ]
     rescue
       write_error
     end
-
 
     def resolve_symlink
       real_path = Pathname.new(@path).realpath.to_s
@@ -152,7 +227,7 @@ module DEA
                 "Content-Length" => size.to_s,
                 "X-Cascade" => "pass"}, [body]]
     end
-
+    
     def write_error
       body = "Write error"
       size = Rack::Utils.bytesize(body)

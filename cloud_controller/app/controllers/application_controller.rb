@@ -46,6 +46,15 @@ class ApplicationController < ActionController::Base
     http.callback { f.resume(http) }
     return Fiber.yield
   end
+  
+  def http_aput(url, auth, action)
+    f = Fiber.current
+    action["authorization"] = auth
+    http = EM::HttpRequest.new(url).put(:head => action)
+    http.errback  { f.resume(http) }
+    http.callback { f.resume(http) }
+    return Fiber.yield
+  end
 
   def user
     @proxy_user || @current_user

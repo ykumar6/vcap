@@ -195,11 +195,31 @@ class AppsController < ApplicationController
       file = get_uploaded_file
       url, auth = AppManager.new(@app).get_file_url(params[:instance_id], params[:path])
       raise CloudError.new(CloudError::APP_FILE_ERROR, params[:path] || '/') unless url
-   
       http = http_apost(url, auth, file)
       self.response_body = http.response
     ensure
       FileUtils.rm_f(file.path)
+    end
+  end
+
+  def fileaction
+    # will Fiber.yield
+    begin
+      url, auth = AppManager.new(@app).get_file_url(params[:instance_id], params[:path])
+      raise CloudError.new(CloudError::APP_FILE_ERROR, params[:path] || '/') unless url
+      puts params
+      action = {:fs_action => params['fs_action']}
+      if params.has_key?("fs_src")
+         action['fs_src'] = params['fs_src']
+      end
+      if params.has_key?("fs_dest")
+        action['fs_dest'] = params['fs_dest']
+      end
+      if params.has_key?("fs_clean") 
+        action['fs_clean'] = params['fs_clean']
+      end
+      http = http_aput(url, auth, action)
+      self.response_body = http.response
     end
   end
 
