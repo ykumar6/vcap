@@ -57,7 +57,7 @@ if [ -z "$CLOUDFOUNDRY_HOME" ]; then
 fi
 
 if [ -z "$VCAP_REPO" ]; then
-  VCAP_REPO=https://github.com/cloudfoundry/vcap.git
+  VCAP_REPO=https://github.com/pblittle/vcap.git
 fi
 
 function run_cmd () {
